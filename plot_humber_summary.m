@@ -42,7 +42,25 @@ for i = 1:size(target_channels, 1)
     end
 end
 
-%% 4. Generate Plots
+%% 4. Data Availability Check
+fprintf('--- Data Availability Report ---\n');
+for i = 1:size(target_channels, 1)
+    idx = indices(i);
+    if idx > 0
+        valid_mask = ~isnan(data(:, idx));
+        if any(valid_mask)
+            t_valid = t(valid_mask);
+            fprintf('%-15s: %s to %s\n', target_channels{i, 1}, ...
+                datestr(min(t_valid), 'yyyy-mm-dd'), ...
+                datestr(max(t_valid), 'yyyy-mm-dd'));
+        else
+            fprintf('%-15s: No valid data found.\n', target_channels{i, 1});
+        end
+    end
+end
+fprintf('--------------------------------\n');
+
+%% 5. Generate Plots
 figure('Name', 'Humber Bridge SHM Summary', 'NumberTitle', 'off', 'Color', 'w');
 
 % Loop to create subplots
@@ -53,15 +71,20 @@ for i = 1:4
     subplot(4, 1, i);
     idx = indices(i);
     if idx > 0
-        plot(t, data(:, idx), plot_colors{i});
+        channel_data = data(:, idx);
+        plot(t, channel_data, plot_colors{i});
         ylabel(y_labels{i});
         title([target_channels{i, 1} ' (' target_channels{i, 2} ')'], 'Interpreter', 'none');
         grid on;
+
+        % Set x-axis limits to the specific data range for this channel
+        valid_mask = ~isnan(channel_data);
+        if any(valid_mask)
+            xlim([min(t(valid_mask)), max(t(valid_mask))]);
+        end
+
         datetick('x', 'yyyy-mm-dd', 'keeplimits');
     end
 end
 
 xlabel('Date');
-
-% Link axes for zooming
-linkaxes(findall(gcf, 'type', 'axes'), 'x');

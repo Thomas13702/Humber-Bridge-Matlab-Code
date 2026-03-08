@@ -1,6 +1,7 @@
 CW1-data/
 ss/
 sources/
+Graphs/
 
 # MATLAB artifacts
 *.mat
