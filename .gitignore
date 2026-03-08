@@ -1,0 +1,8 @@
+CW1-data/
+ss/
+sources/
+
+# MATLAB artifacts
+*.mat
+*.asv
+*.pdf
