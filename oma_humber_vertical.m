@@ -38,6 +38,14 @@ end
 vert1 = data(:, 15); % Sensor 1 (D.VERT1)
 vert2 = data(:, 16); % Sensor 2 (D.VERT2)
 
+% Convert units from mm/s^2 to g if necessary
+if mean(abs(vert1), 'omitnan') > 100
+    vert1 = vert1 / 9806.65;
+end
+if mean(abs(vert2), 'omitnan') > 100
+    vert2 = vert2 / 9806.65;
+end
+
 % Remove NaNs and Detrend (remove static offset)
 valid_idx = ~isnan(vert1) & ~isnan(vert2);
 vert1 = detrend(vert1(valid_idx), 'constant');

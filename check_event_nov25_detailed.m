@@ -118,8 +118,8 @@ elseif exist('tdata', 'var') && exist('time', 'var')
         
         % Map Wind, Vert, and Lat Accel
         wind_speed = data_accs(:, 10);
-        acc_lat    = data_accs(:, 11);
-        acc_vert   = data_accs(:, 16); % Channel 16: VERT2 (g)
+        acc_lat    = data_accs(:, 11) / 1000;    % Convert mm/s^2 to m/s^2
+        acc_vert   = data_accs(:, 16) / 9806.65; % Convert mm/s^2 to g
         
         % Mark Wind Dir as missing for this format
         wind_dir = []; 

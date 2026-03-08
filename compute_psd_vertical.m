@@ -50,6 +50,11 @@ end
 
 y = D.data(:, target_col);
 
+% Convert units from mm/s^2 to g if necessary (Mean ~9800)
+if mean(abs(y), 'omitnan') > 100
+    y = y / 9806.65;
+end
+
 % Remove NaNs and Detrend (remove static offset)
 y(isnan(y)) = [];
 y = detrend(y, 'constant');

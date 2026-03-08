@@ -60,7 +60,7 @@ window_size = 20;
 gps_height_lpf = movmean(gps_height_raw, window_size);
 
 wind_speed     = data(:, 10);
-lat_accel      = data(:, 11);
+lat_accel      = data(:, 11) / 1000; % Convert mm/s^2 to m/s^2
 
 %% 4. Create Time Vector
 % Data is 1Hz for 1 day
