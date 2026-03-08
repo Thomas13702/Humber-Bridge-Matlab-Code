@@ -59,6 +59,7 @@ step = window - noverlap;
 indices = 1:step:(length(vert1) - window + 1);
 num_segments = length(indices);
 psd_sum = zeros(nfft, 1);
+% Loop over segments to compute average PSD
 for i = 1:num_segments
     segment = vert1(indices(i) : indices(i) + window - 1);
     windowed_segment = segment .* win;
@@ -79,6 +80,7 @@ idx_search = f > 0.05 & f <= 0.5;
 % [pks, locs] = findpeaks(...) % Requires toolbox
 
 % --- Manual Peak Finding ---
+% Identify the dominant frequency in the vertical acceleration
 [peak_power, max_idx] = max(pxx(idx_search));
 f_search = f(idx_search);
 f_peak = f_search(max_idx);
@@ -100,6 +102,7 @@ fprintf('Fundamental Frequency Identified: %.3f Hz\n', f_peak);
 % --- Manual Welch's Method for CSD ---
 fprintf("Using manual Welch's method for CSD...\n");
 csd_sum = zeros(nfft, 1);
+% Compute Cross-Spectral Density to compare Sensor 1 and Sensor 2
 for i = 1:num_segments
     segment1 = vert1(indices(i) : indices(i) + window - 1);
     segment2 = vert2(indices(i) : indices(i) + window - 1);
@@ -107,6 +110,7 @@ for i = 1:num_segments
     windowed_segment2 = segment2 .* win;
     X1 = fft(windowed_segment1, nfft);
     X2 = fft(windowed_segment2, nfft);
+    % CPSD is the conjugate of X1 times X2
     csd_segment = conj(X1) .* X2 / (Fs * sum(win.^2));
     csd_sum = csd_sum + csd_segment;
 end
@@ -120,6 +124,7 @@ f_cpsd = f(1:nfft/2 + 1);
 [~, idx_peak] = min(abs(f_cpsd - f_peak));
 
 % Calculate Phase Difference at Peak
+% Phase tells us if sensors are moving together (bending) or opposite (torsion)
 phase_rad = angle(pxy(idx_peak));
 phase_deg = rad2deg(phase_rad);
 
@@ -167,4 +172,3 @@ end
 
 text(1.5, phase_deg + sign(phase_deg)*20, sprintf('%.1f°\n%s', phase_deg, mode_type), ...
     'HorizontalAlignment', 'center', 'FontWeight', 'bold');
-

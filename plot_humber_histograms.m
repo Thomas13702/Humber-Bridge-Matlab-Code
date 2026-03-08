@@ -39,6 +39,7 @@ if ~isempty(idx_exp),      Exp   = data(:, idx_exp);      else, Exp   = nan(N,1)
 %% 3. Plot 1: 3D Aerodynamic Correlation (plot3)
 figure('Name', '3D Wind-Direction-Vibration', 'Position', [100, 100, 800, 600]);
 % We use scatter3 instead of plot3 so we can colour-code the points by vibration severity
+% This helps identify which wind conditions cause the most movement
 scatter3(W_dir, W_spd, Lat, 10, Lat, 'filled'); 
 colormap(jet);
 colorbar;
@@ -52,6 +53,7 @@ grid on;
 %% 4. Plot 2: 2D Bivariate Histogram for Thermal Expansion
 figure('Name', '2D Thermal Density', 'Position', [150, 150, 800, 600]);
 % Remove NaNs just for this specific pair to avoid histogram errors
+% Shows the most common operating conditions (Temperature vs Expansion)
 valid_idx = ~isnan(Temp) & ~isnan(Exp);
 if any(valid_idx)
     histogram2(Temp(valid_idx), Exp(valid_idx), 'DisplayStyle', 'tile', 'ShowEmptyBins', 'off');
@@ -68,6 +70,7 @@ grid on;
 
 %% 5. Plot 3: 1D Loading Histograms (Overlaid)
 figure('Name', 'Load Distributions', 'Position', [200, 200, 800, 600]);
+% Compare the statistical distribution of traffic vs wind loading
 % Plot Traffic Vibration Histogram
 histogram(Vert, 'Normalization', 'probability', 'BinWidth', 0.005, 'FaceColor', 'k', 'EdgeColor', 'none');
 hold on;

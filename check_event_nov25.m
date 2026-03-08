@@ -23,6 +23,7 @@ data(data == -999) = NaN;
 %% 3. Filter for Target Date (Nov 25, 2012)
 target_date = datenum(2012, 11, 25);
 % Find indices where the integer part of time matches the target date
+% floor(t) gives the date without the time component
 day_indices = floor(t) == target_date;
 
 if ~any(day_indices)

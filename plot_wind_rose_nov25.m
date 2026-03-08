@@ -20,6 +20,7 @@ data(data == -999) = NaN;
 
 %% 2. Filter for Nov 25, 2012
 target_date = datenum(2012, 11, 25);
+% Create a mask to isolate data for the specific day
 day_mask = floor(t) == target_date;
 
 if ~any(day_mask)
@@ -50,6 +51,7 @@ fprintf('Max Wind Speed on 25/11/12: %.2f m/s\n', max(ws));
 
 %% 4. Generate Plots
 % Plot 1: Polar Scatter (Speed vs Direction)
+% Visualizes the intensity of wind from different directions
 figure('Name', 'Wind Speed vs Direction', 'Color', 'w', 'Position', [100, 100, 600, 600]);
 polarscatter(deg2rad(wd), ws, 30, ws, 'filled');
 colormap(jet);
@@ -61,6 +63,7 @@ thetaticklabels({'N','NE','E','SE','S','SW','W','NW'});
 
 
 % Plot 2: Directional Histogram
+% Shows the frequency of wind coming from each direction sector
 figure('Name', 'Wind Direction Frequency', 'Color', 'w', 'Position', [150, 150, 600, 600]);
 polarhistogram(deg2rad(wd), 16, 'FaceColor', 'b', 'FaceAlpha', 0.6);
 title('Wind Direction Frequency');

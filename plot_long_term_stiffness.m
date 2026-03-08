@@ -33,6 +33,7 @@ if isempty(idx_freq)
 end
 
 % Target 2: Midspan Temperature (TSH000CDT or fallback HBB_TSH000CDA)
+% We prefer the deck temperature, but fall back to air temp if needed
 idx_temp = get_idx('TSH000CDT');
 if isempty(idx_temp)
     fprintf('Primary temperature channel TSH000CDT not found. Trying fallback HBB_TSH000CDA...\n');
@@ -64,4 +65,3 @@ grid on;
 xlabel('Midspan Temperature (°C)', 'FontSize', 12);
 ylabel('Fundamental Vertical Frequency (Hz)', 'FontSize', 12);
 title('Long-Term Stiffness: Frequency vs Temperature', 'FontSize', 14);
-

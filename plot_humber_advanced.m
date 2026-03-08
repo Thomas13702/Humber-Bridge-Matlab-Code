@@ -48,13 +48,14 @@ end
 % Extract Heights and Calculate Torsion
 h_east = data(:, 3);
 h_west = data(:, 6);
-deck_rotation = h_east - h_west; % Differential height represents twist
+deck_rotation = h_east - h_west; % Differential height represents twist (torsion)
 
 % GPS Height for Filtering Plot (Use East Height)
 gps_height_raw = h_east;
 
 % Calculate LPF (Quasi-Static) Component
 % Window size for ~0.05Hz cutoff at 1Hz sampling -> ~20 samples
+% Moving average acts as a Low Pass Filter to remove high-freq vibrations
 window_size = 20; 
 gps_height_lpf = movmean(gps_height_raw, window_size);
 
@@ -69,6 +70,7 @@ t_hours = (0:N-1)' / 3600; % Time in hours (0 to ~24)
 
 %% 5. Generate Plots
 % Plot 1: Aerodynamic Stability (Wind vs Deck Torsion)
+% Checks if high wind speeds cause the deck to twist
 figure('Name', 'Aerodynamic Stability', 'Color', 'w', 'Position', [100, 100, 800, 600]);
 yyaxis left
 plot(t_hours, wind_speed, 'b', 'LineWidth', 1);
@@ -85,6 +87,7 @@ grid on;
 axis tight;
 
 % Plot 2: Filtering (Raw vs LPF Height)
+% Visualizes the difference between total movement and static deflection
 figure('Name', 'GPS Filtering', 'Color', 'w', 'Position', [150, 150, 800, 600]);
 plot(t_hours, gps_height_raw, 'Color', [0.7 0.7 0.7], 'LineWidth', 0.5); hold on;
 plot(t_hours, gps_height_lpf, 'k', 'LineWidth', 1.5); % Thick black for LPF
@@ -97,6 +100,7 @@ axis tight;
 
 
 % Plot 3: Buffeting Correlation (Wind vs Lat Accel)
+% Scatter plot to show how wind speed drives lateral vibration
 figure('Name', 'Buffeting Correlation', 'Color', 'w', 'Position', [200, 200, 800, 600]);
 scatter(wind_speed, lat_accel, 10, 'filled', 'MarkerFaceAlpha', 0.4);
 title('Wind vs Lateral Acceleration Correlation');

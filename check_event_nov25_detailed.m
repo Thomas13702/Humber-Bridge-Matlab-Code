@@ -21,6 +21,7 @@ end
 %% 2. Extract Data
 % Handle case where variables are not in structure 'D'
 % The file might contain: date, fftsize, frames, fs, tdata, time
+% This block ensures compatibility with different data versions
 if exist('D', 'var')
     % Data is inside structure D
     t_accs = D.accs_timestamp;
@@ -75,6 +76,7 @@ elseif exist('tdata', 'var') && exist('time', 'var')
     n_samples = size(data_accs, 1);
     
     % Handle Time Vector Generation/Correction
+    % If time vector is missing or mismatched, regenerate it using fs
     if numel(t_accs) ~= n_samples
         if exist('fs', 'var') && ~isempty(fs)
             fprintf('Regenerating time vector (Time len: %d, Data len: %d, fs: %.2f)...\n', numel(t_accs), n_samples, fs);
@@ -99,6 +101,7 @@ elseif exist('tdata', 'var') && exist('time', 'var')
     end
 
     % Check for 16-channel format based on user definition
+    % Standard format: Cols 1-3 (Sensor 1), Cols 4-6 (Sensor 2), Col 10 (Wind), Col 11 (Lat Acc)
     if size(data_accs, 2) >= 16
         fprintf('Using 16-channel tdata definition.\n');
         % Channel 1: (E+W)/2 east mm

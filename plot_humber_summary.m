@@ -44,6 +44,7 @@ end
 
 %% 4. Data Availability Check
 fprintf('--- Data Availability Report ---\n');
+% Check each channel to see the date range of valid (non-NaN) data
 for i = 1:size(target_channels, 1)
     idx = indices(i);
     if idx > 0
@@ -63,7 +64,7 @@ fprintf('--------------------------------\n');
 %% 5. Generate Plots
 figure('Name', 'Humber Bridge SHM Summary', 'NumberTitle', 'off', 'Color', 'w');
 
-% Loop to create subplots
+% Loop to create subplots for each channel
 plot_colors = {'b', 'r', 'k', 'm'};
 y_labels = {'Wind Speed (m/s)', 'Temp (C)', 'Disp (mm)', 'RMS Accel (g)'};
 

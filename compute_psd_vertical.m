@@ -61,18 +61,21 @@ y = detrend(y, 'constant');
 fprintf("Signal Processing Toolbox not found. Using manual Welch's method...\n");
 
 % 1. Define window
+% Hanning window to reduce spectral leakage
 win = 0.5 * (1 - cos(2 * pi * (0:window_len-1)' / (window_len-1))); % Hann window
 
 % 2. Get segment start indices
+% Calculate step size based on overlap (50%)
 step = window_len - noverlap;
 indices = 1:step:(length(y) - window_len + 1);
 
 % 3. Calculate number of segments and initialize
 num_segments = length(indices);
-psd_sum = zeros(nfft, 1);
+psd_sum = zeros(nfft, 1); % Accumulator for PSD
 
 % 4. Process each segment
 for i = 1:num_segments
+    % Extract segment and apply window
     segment = y(indices(i) : indices(i) + window_len - 1);
     windowed_segment = segment .* win;
     X = fft(windowed_segment, nfft);
@@ -91,12 +94,14 @@ f = (0:nfft/2)' * Fs / nfft;
 
 %% 4. Find Peaks (Top 3)
 % Limit search to 0-0.5 Hz range as requested
+% Bridge natural frequencies are typically low (< 1 Hz)
 idx_limit = f <= 0.5;
 % [pks, locs] = findpeaks(...) % This requires Signal Processing Toolbox
 
 % --- Manual Peak Finding ---
 f_search = f(idx_limit);
 pxx_search = pxx(idx_limit);
+% Find local maxima by comparing with neighbors
 is_peak = pxx_search > [0; pxx_search(1:end-1)] & pxx_search > [pxx_search(2:end); 0];
 [sorted_pks, sort_idx] = sort(pxx_search(is_peak), 'descend');
 sorted_locs = f_search(is_peak);

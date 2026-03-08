@@ -66,6 +66,7 @@ end
 
 %% 2. Plot 9: Data Reduction Comparison (1Hz vs 30-min)
 % Objective: Overlay raw 1Hz wind speed with 30-min mean wind speed.
+% This demonstrates how statistical summaries smooth out gusts and peak events.
 
 figure('Name', 'Data Reduction Comparison', 'Color', 'w', 'Position', [100, 100, 800, 600]);
 
@@ -104,6 +105,7 @@ axis tight;
 
 %% 3. Plot 10: Dynamic Response Isolation (HPF)
 % Objective: HPF on GPS Height to isolate traffic/buffeting.
+% Separates the quasi-static deflection (temp/mean wind) from dynamic vibration.
 
 figure('Name', 'Dynamic Response Isolation', 'Color', 'w', 'Position', [150, 150, 800, 600]);
 
@@ -116,6 +118,7 @@ end
 
 % 3b. High-Pass Filter
 % Remove quasi-static (< 0.05 Hz) using moving mean subtraction
+% This isolates the dynamic response (vibrations) from the static deflection
 fs = 1; % Hz
 fc = 0.05; % Cutoff frequency (Hz)
 window_size = round(fs / fc);
@@ -142,6 +145,7 @@ grid on; axis tight;
 
 %% 4. Plot 11: Deck Torsion (East vs West Differential)
 % Objective: Plot difference between East and West GPS Height.
+% Torsion is critical for aerodynamic stability (flutter).
 
 figure('Name', 'Deck Torsion', 'Color', 'w', 'Position', [200, 200, 800, 600]);
 
@@ -170,6 +174,7 @@ end
 
 %% 5. Plot 12: Long-Term Stiffness (Freq vs Temp)
 % Objective: Scatter plot of Fundamental Freq vs Temperature.
+% As temperature rises, materials expand and stiffness decreases, lowering frequency.
 
 figure('Name', 'Long-Term Stiffness', 'Color', 'w', 'Position', [250, 250, 800, 600]);
 
