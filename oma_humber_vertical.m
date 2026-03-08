@@ -50,13 +50,41 @@ noverlap = 1024;    % 50% overlap
 nfft = 2048;        % FFT points
 
 % PSD of Sensor 1
-[pxx, f] = pwelch(vert1, window, noverlap, nfft, Fs);
+% [pxx, f] = pwelch(vert1, window, noverlap, nfft, Fs); % Requires toolbox
+
+% --- Manual Welch's Method for PSD ---
+fprintf("Signal Processing Toolbox not found. Using manual Welch's method for PSD...\n");
+win = 0.5 * (1 - cos(2 * pi * (0:window-1)' / (window-1))); % Hann window
+step = window - noverlap;
+indices = 1:step:(length(vert1) - window + 1);
+num_segments = length(indices);
+psd_sum = zeros(nfft, 1);
+for i = 1:num_segments
+    segment = vert1(indices(i) : indices(i) + window - 1);
+    windowed_segment = segment .* win;
+    X = fft(windowed_segment, nfft);
+    psd_segment = (abs(X).^2) / (Fs * sum(win.^2));
+    psd_sum = psd_sum + psd_segment;
+end
+pxx_manual = psd_sum / num_segments;
+pxx_manual(2:nfft/2) = 2 * pxx_manual(2:nfft/2);
+f_manual = (0:nfft-1)' * Fs / nfft;
+pxx = pxx_manual(1:nfft/2 + 1);
+f = f_manual(1:nfft/2 + 1);
+% --- End of Manual PSD ---
 
 % Find Fundamental Frequency (Max Peak)
 % Limit search to 0.05 - 0.5 Hz to avoid DC/low freq noise
 idx_search = f > 0.05 & f <= 0.5;
-[pks, locs] = findpeaks(pxx(idx_search), f(idx_search), 'SortStr', 'descend', 'NPeaks', 1);
+% [pks, locs] = findpeaks(...) % Requires toolbox
 
+% --- Manual Peak Finding ---
+[peak_power, max_idx] = max(pxx(idx_search));
+f_search = f(idx_search);
+f_peak = f_search(max_idx);
+pks = peak_power;
+locs = f_peak;
+% --- End of Manual Peak Finding ---
 if isempty(pks)
     error('No peaks found in the specified frequency range.');
 end
@@ -67,7 +95,26 @@ peak_power = pks(1);
 fprintf('Fundamental Frequency Identified: %.3f Hz\n', f_peak);
 
 %% 4. Cross-Spectral Analysis (Phase)
-[pxy, f_cpsd] = cpsd(vert1, vert2, window, noverlap, nfft, Fs);
+% [pxy, f_cpsd] = cpsd(vert1, vert2, window, noverlap, nfft, Fs); % Requires toolbox
+
+% --- Manual Welch's Method for CSD ---
+fprintf("Using manual Welch's method for CSD...\n");
+csd_sum = zeros(nfft, 1);
+for i = 1:num_segments
+    segment1 = vert1(indices(i) : indices(i) + window - 1);
+    segment2 = vert2(indices(i) : indices(i) + window - 1);
+    windowed_segment1 = segment1 .* win;
+    windowed_segment2 = segment2 .* win;
+    X1 = fft(windowed_segment1, nfft);
+    X2 = fft(windowed_segment2, nfft);
+    csd_segment = conj(X1) .* X2 / (Fs * sum(win.^2));
+    csd_sum = csd_sum + csd_segment;
+end
+pxy_manual = csd_sum / num_segments;
+pxy_manual(2:nfft/2) = 2 * pxy_manual(2:nfft/2);
+pxy = pxy_manual(1:nfft/2 + 1);
+f_cpsd = f(1:nfft/2 + 1);
+% --- End of Manual CSD ---
 
 % Find index of peak frequency in CPSD vector
 [~, idx_peak] = min(abs(f_cpsd - f_peak));
@@ -106,6 +153,9 @@ set(gca, 'XTickLabel', {'Sensor 1 (Ref)', 'Sensor 2'});
 ylim([-180 180]);
 grid on;
 
+% Add label for Reference Sensor (Sensor 1)
+text(1, 10, '0\circ (Ref)', 'HorizontalAlignment', 'center', 'FontWeight', 'bold');
+
 % Determine Mode Type
 if abs(phase_deg) < 45
     mode_type = 'In-Phase (Vertical Bending)';
@@ -117,3 +167,4 @@ end
 
 text(1.5, phase_deg + sign(phase_deg)*20, sprintf('%.1f°\n%s', phase_deg, mode_type), ...
     'HorizontalAlignment', 'center', 'FontWeight', 'bold');
+

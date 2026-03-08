@@ -55,13 +55,56 @@ y(isnan(y)) = [];
 y = detrend(y, 'constant');
 
 %% 3. Compute PSD
-[pxx, f] = pwelch(y, window_len, noverlap, nfft, Fs);
+% [pxx, f] = pwelch(y, window_len, noverlap, nfft, Fs); % This requires Signal Processing Toolbox
+
+% --- Manual Welch's Method Implementation ---
+fprintf("Signal Processing Toolbox not found. Using manual Welch's method...\n");
+
+% 1. Define window
+win = 0.5 * (1 - cos(2 * pi * (0:window_len-1)' / (window_len-1))); % Hann window
+
+% 2. Get segment start indices
+step = window_len - noverlap;
+indices = 1:step:(length(y) - window_len + 1);
+
+% 3. Calculate number of segments and initialize
+num_segments = length(indices);
+psd_sum = zeros(nfft, 1);
+
+% 4. Process each segment
+for i = 1:num_segments
+    segment = y(indices(i) : indices(i) + window_len - 1);
+    windowed_segment = segment .* win;
+    X = fft(windowed_segment, nfft);
+    psd_segment = (abs(X).^2) / (Fs * sum(win.^2));
+    psd_sum = psd_sum + psd_segment;
+end
+
+% 5. Average the PSDs and create one-sided spectrum
+pxx = psd_sum / num_segments;
+pxx(2:nfft/2) = 2 * pxx(2:nfft/2);
+pxx = pxx(1:nfft/2 + 1);
+
+% 6. Create frequency vector
+f = (0:nfft/2)' * Fs / nfft;
+% --- End of Manual Implementation ---
 
 %% 4. Find Peaks (Top 3)
 % Limit search to 0-0.5 Hz range as requested
 idx_limit = f <= 0.5;
-[pks, locs] = findpeaks(pxx(idx_limit), f(idx_limit), ...
-                        'SortStr', 'descend', 'NPeaks', 3);
+% [pks, locs] = findpeaks(...) % This requires Signal Processing Toolbox
+
+% --- Manual Peak Finding ---
+f_search = f(idx_limit);
+pxx_search = pxx(idx_limit);
+is_peak = pxx_search > [0; pxx_search(1:end-1)] & pxx_search > [pxx_search(2:end); 0];
+[sorted_pks, sort_idx] = sort(pxx_search(is_peak), 'descend');
+sorted_locs = f_search(is_peak);
+sorted_locs = sorted_locs(sort_idx);
+num_peaks_to_find = min(3, length(sorted_pks));
+pks = sorted_pks(1:num_peaks_to_find);
+locs = sorted_locs(1:num_peaks_to_find);
+% --- End of Manual Peak Finding ---
 
 %% 5. Plot Results
 figure('Name', 'PSD Vertical Acceleration', 'Color', 'w');
@@ -77,7 +120,7 @@ end
 
 title('Vertical Natural Frequencies of Humber Bridge');
 xlabel('Frequency (Hz)');
-ylabel('Power/Frequency');
+ylabel('Power/Frequency (g^2/Hz)');
 xlim([0 0.5]);
 grid on;
 legend('PSD Estimate', 'Resonant Peaks');

@@ -67,13 +67,7 @@ end
 %% 2. Plot 9: Data Reduction Comparison (1Hz vs 30-min)
 % Objective: Overlay raw 1Hz wind speed with 30-min mean wind speed.
 
-% Create unified figure window with tabs
-fig = figure('Name', 'Advanced SHM Analysis', 'Color', 'w', 'Position', [100, 100, 1000, 600]);
-tabgp = uitabgroup(fig);
-
-% Tab 1: Data Reduction
-tab1 = uitab(tabgp, 'Title', 'Data Reduction');
-axes('Parent', tab1);
+figure('Name', 'Data Reduction Comparison', 'Color', 'w', 'Position', [100, 100, 800, 600]);
 
 % 2a. Extract 1Hz Wind Speed (Col 10)
 ws_1hz = event_data(:, 10);
@@ -107,11 +101,11 @@ datetick('x', 'HH:MM', 'keeplimits');
 grid on;
 axis tight;
 
+
 %% 3. Plot 10: Dynamic Response Isolation (HPF)
 % Objective: HPF on GPS Height to isolate traffic/buffeting.
 
-% Tab 2: Dynamic Response
-tab2 = uitab(tabgp, 'Title', 'Dynamic Response');
+figure('Name', 'Dynamic Response Isolation', 'Color', 'w', 'Position', [150, 150, 800, 600]);
 
 % 3a. Extract GPS Height (Assume Col 3 based on [E, N, H] pattern)
 if size(event_data, 2) >= 3
@@ -130,14 +124,14 @@ window_size = round(fs / fc);
 gps_h_dynamic = gps_h_raw - movmean(gps_h_raw, window_size);
 
 % 3c. Plot
-subplot(2, 1, 1, 'Parent', tab2);
+subplot(2, 1, 1);
 plot(event_t, gps_h_raw, 'k');
-title('Raw GPS Height (Quasi-Static + Dynamic)');
+title('Total Vertical Displacement (Unfiltered GPS Signal)');
 ylabel('Disp (mm)');
 datetick('x', 'HH:MM', 'keeplimits');
 grid on; axis tight;
 
-subplot(2, 1, 2, 'Parent', tab2);
+subplot(2, 1, 2);
 plot(event_t, gps_h_dynamic, 'b');
 title(sprintf('Isolated Dynamic Response (HPF > %.2f Hz)', fc));
 ylabel('Disp (mm)');
@@ -145,12 +139,11 @@ xlabel('Time (UTC)');
 datetick('x', 'HH:MM', 'keeplimits');
 grid on; axis tight;
 
+
 %% 4. Plot 11: Deck Torsion (East vs West Differential)
 % Objective: Plot difference between East and West GPS Height.
 
-% Tab 3: Deck Torsion
-tab3 = uitab(tabgp, 'Title', 'Deck Torsion');
-axes('Parent', tab3);
+figure('Name', 'Deck Torsion', 'Color', 'w', 'Position', [200, 200, 800, 600]);
 
 % 4a. Extract Heights (Assuming Sensor 1=Cols 1-3, Sensor 2=Cols 4-6)
 if size(event_data, 2) >= 6
@@ -174,12 +167,11 @@ else
     text(0.5, 0.5, 'Insufficient Data for Torsion (Need 6+ GPS cols)', 'HorizontalAlignment', 'center');
 end
 
+
 %% 5. Plot 12: Long-Term Stiffness (Freq vs Temp)
 % Objective: Scatter plot of Fundamental Freq vs Temperature.
 
-% Tab 4: Stiffness vs Temp
-tab4 = uitab(tabgp, 'Title', 'Stiffness vs Temp');
-axes('Parent', tab4);
+figure('Name', 'Long-Term Stiffness', 'Color', 'w', 'Position', [250, 250, 800, 600]);
 
 % 5a. Find Indices
 % Look for Frequency channel (e.g., FREQ_VS1) and Temperature

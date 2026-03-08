@@ -78,5 +78,4 @@ title('Statistical Distribution of Bridge Loading (2011-2016)');
 xlabel('RMS Acceleration Magnitude (g)');
 ylabel('Probability / Frequency of Occurrence');
 legend('Vertical Vibration (Traffic Dominated)', 'Lateral Vibration (Wind Dominated)');
-xlim([0 0.1]); % Focus on the bulk of the data
 grid on;

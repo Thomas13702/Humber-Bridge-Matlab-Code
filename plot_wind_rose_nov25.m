@@ -49,10 +49,8 @@ wd = wd(valid_idx);
 fprintf('Max Wind Speed on 25/11/12: %.2f m/s\n', max(ws));
 
 %% 4. Generate Plots
-figure('Name', 'Wind Analysis 25/11/12', 'Color', 'w', 'Position', [100, 100, 1000, 500]);
-
-% Subplot 1: Polar Scatter (Speed vs Direction)
-subplot(1, 2, 1);
+% Plot 1: Polar Scatter (Speed vs Direction)
+figure('Name', 'Wind Speed vs Direction', 'Color', 'w', 'Position', [100, 100, 600, 600]);
 polarscatter(deg2rad(wd), ws, 30, ws, 'filled');
 colormap(jet);
 c = colorbar;
@@ -61,11 +59,9 @@ title('Wind Speed vs Direction (Scatter)');
 rlim([0 max(ws)*1.1]);
 thetaticklabels({'N','NE','E','SE','S','SW','W','NW'});
 
-% Subplot 2: Directional Histogram
-subplot(1, 2, 2);
+
+% Plot 2: Directional Histogram
+figure('Name', 'Wind Direction Frequency', 'Color', 'w', 'Position', [150, 150, 600, 600]);
 polarhistogram(deg2rad(wd), 16, 'FaceColor', 'b', 'FaceAlpha', 0.6);
 title('Wind Direction Frequency');
 thetaticklabels({'N','NE','E','SE','S','SW','W','NW'});
-
-% Add overall title
-sgtitle('Wind Conditions on Nov 25, 2012');

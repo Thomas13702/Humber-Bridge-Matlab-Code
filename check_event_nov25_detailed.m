@@ -183,8 +183,8 @@ subplot(4, 1, 3); hold on;
 if ~isempty(t_gps)
     if strcmp(data_source, 'tdata') && size(data_accs, 2) >= 16
         % Plot Mean East and Mean North for 16-channel data
-        plot(t_gps, gps_mean_east, 'b', 'DisplayName', 'Mean East (Lat?)');
-        plot(t_gps, gps_mean_north, 'k', 'DisplayName', 'Mean North (Axial?)');
+        plot(t_gps, gps_mean_east, 'b', 'DisplayName', 'Mean East (Lat)');
+        plot(t_gps, gps_mean_north, 'k', 'DisplayName', 'Mean North (Axial)');
     else
         plot(t_gps, gps_edn, 'k', 'DisplayName', 'East (N)');
         plot(t_gps, gps_wdn, 'm', 'DisplayName', 'West (N)');

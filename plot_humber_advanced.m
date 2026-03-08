@@ -35,10 +35,9 @@ else
 end
 
 %% 3. Extract Specific Channels
-% Mapping based on user request:
-% Col 2: GPS Height Raw
-% Col 5: GPS Height LPF
-% Col 6: Deck Rotation
+% Correct Mapping based on standard Humber dataset (Cols 1-3 Sensor 1, 4-6 Sensor 2)
+% Col 3: GPS Height East
+% Col 6: GPS Height West
 % Col 10: Wind Speed
 % Col 11: Lateral Acceleration
 
@@ -46,9 +45,19 @@ if size(data, 2) < 11
     error('Data matrix has fewer than 11 columns. Cannot extract required channels.');
 end
 
-gps_height_raw = data(:, 2);
-gps_height_lpf = data(:, 5);
-deck_rotation  = data(:, 6);
+% Extract Heights and Calculate Torsion
+h_east = data(:, 3);
+h_west = data(:, 6);
+deck_rotation = h_east - h_west; % Differential height represents twist
+
+% GPS Height for Filtering Plot (Use East Height)
+gps_height_raw = h_east;
+
+% Calculate LPF (Quasi-Static) Component
+% Window size for ~0.05Hz cutoff at 1Hz sampling -> ~20 samples
+window_size = 20; 
+gps_height_lpf = movmean(gps_height_raw, window_size);
+
 wind_speed     = data(:, 10);
 lat_accel      = data(:, 11);
 
@@ -59,10 +68,8 @@ Fs = 1;
 t_hours = (0:N-1)' / 3600; % Time in hours (0 to ~24)
 
 %% 5. Generate Plots
-figure('Name', 'Advanced Structural Behaviour', 'Color', 'w', 'Position', [100, 100, 1000, 800]);
-
-% Subplot 1: Aerodynamic Stability (Wind vs Deck Torsion)
-subplot(2, 2, 1);
+% Plot 1: Aerodynamic Stability (Wind vs Deck Torsion)
+figure('Name', 'Aerodynamic Stability', 'Color', 'w', 'Position', [100, 100, 800, 600]);
 yyaxis left
 plot(t_hours, wind_speed, 'b', 'LineWidth', 1);
 ylabel('Wind Speed (m/s)');
@@ -77,8 +84,8 @@ xlabel('Time (Hours)');
 grid on;
 axis tight;
 
-% Subplot 2: Filtering (Raw vs LPF Height)
-subplot(2, 2, 2);
+% Plot 2: Filtering (Raw vs LPF Height)
+figure('Name', 'GPS Filtering', 'Color', 'w', 'Position', [150, 150, 800, 600]);
 plot(t_hours, gps_height_raw, 'Color', [0.7 0.7 0.7], 'LineWidth', 0.5); hold on;
 plot(t_hours, gps_height_lpf, 'k', 'LineWidth', 1.5); % Thick black for LPF
 title('Filtering: High-Freq Buffeting vs. Quasi-Static');
@@ -88,9 +95,9 @@ legend('Raw GPS', 'LPF GPS', 'Location', 'best');
 grid on;
 axis tight;
 
-% Subplot 3: Buffeting Correlation (Wind vs Lat Accel)
-% Spanning the bottom row for better visibility
-subplot(2, 2, [3 4]);
+
+% Plot 3: Buffeting Correlation (Wind vs Lat Accel)
+figure('Name', 'Buffeting Correlation', 'Color', 'w', 'Position', [200, 200, 800, 600]);
 scatter(wind_speed, lat_accel, 10, 'filled', 'MarkerFaceAlpha', 0.4);
 title('Wind vs Lateral Acceleration Correlation');
 xlabel('Wind Speed (m/s)');
