@@ -78,14 +78,14 @@ for i = 1:4
         title([target_channels{i, 1} ' (' target_channels{i, 2} ')'], 'Interpreter', 'none');
         grid on;
 
-        % Set x-axis limits to the specific data range for this channel
-        valid_mask = ~isnan(channel_data);
-        if any(valid_mask)
-            xlim([min(t(valid_mask)), max(t(valid_mask))]);
-        end
+        % Set x-axis limits to the global time range so they align
+        xlim([min(t), max(t)]);
 
         datetick('x', 'yyyy-mm-dd', 'keeplimits');
     end
 end
 
 xlabel('Date');
+
+% Link axes to ensure zooming affects all plots simultaneously
+linkaxes(findall(gcf, 'type', 'axes'), 'x');
