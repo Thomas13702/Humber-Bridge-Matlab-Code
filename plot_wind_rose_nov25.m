@@ -1,122 +1,106 @@
-%% Wind Rose Analysis for Nov 25, 2012
-% Visualizes wind speed and direction for the specific storm event using detailed data.
+%% Wind Rose Analysis
+% Visualizes wind speed and direction for the long-term summary data 
+% and the specific storm event (Nov 25, 2012) using detailed data.
 
 clear; clc; close all;
 
-%% 1. Load Detailed Event Data
-filename = 'humberdefs_20121125_dsa.mat';
-if exist(filename, 'file')
-    load(filename);
-elseif exist(fullfile('CW1-data', filename), 'file')
-    load(fullfile('CW1-data', filename));
-elseif exist(fullfile('..', 'CW1-data', filename), 'file')
-    load(fullfile('..', 'CW1-data', filename));
+%% 1. Load Long-Term Summary Data
+filename_summary = 'h_summaries20160405_simple.mat';
+if exist(filename_summary, 'file')
+    load(filename_summary);
+elseif exist(fullfile('CW1-data', filename_summary), 'file')
+    load(fullfile('CW1-data', filename_summary));
+elseif exist(fullfile('..', 'CW1-data', filename_summary), 'file')
+    load(fullfile('..', 'CW1-data', filename_summary));
 else
-    error('File %s not found.', filename);
+    error('Summary file %s not found.', filename_summary);
 end
 
-%% 2. Extract Variables
+% Clean data
+data(data == -999) = NaN;
+
+% Extract Summary Wind Data
+idx_ws = find(strcmp(lab, 'HBB_WIH000CDS'), 1);
+idx_wd = find(strcmp(lab, 'HBB_WIH000CDD'), 1);
+
+if isempty(idx_ws) || isempty(idx_wd)
+    error('Could not find wind speed/direction channels in summary data.');
+end
+
+ws_sum_raw = data(:, idx_ws);
+wd_sum_raw = data(:, idx_wd);
+t_sum      = t; % Keep time vector for interpolation
+
+valid_idx_sum = ~isnan(ws_sum_raw) & ~isnan(wd_sum_raw);
+ws_sum = ws_sum_raw(valid_idx_sum);
+wd_sum = wd_sum_raw(valid_idx_sum);
+t_sum_valid = t_sum(valid_idx_sum);
+
+clear data lab t; % Clean up (t is safely stored in t_sum)
+
+%% 2. Load Detailed Event Data (Day Data)
+filename_day = 'humberdefs_20121125_dsa.mat';
+if exist(filename_day, 'file')
+    load(filename_day);
+elseif exist(fullfile('CW1-data', filename_day), 'file')
+    load(fullfile('CW1-data', filename_day));
+elseif exist(fullfile('..', 'CW1-data', filename_day), 'file')
+    load(fullfile('..', 'CW1-data', filename_day));
+else
+    error('File %s not found.', filename_day);
+end
+
+%% 3. Extract Wind Data for Day
 if exist('D', 'var')
     if isfield(D, 'data')
-        data = D.data;
+        day_data = D.data;
     elseif isfield(D, 'accs')
-        data = D.accs;
+        day_data = D.accs;
     else
         error('Structure D found but .data or .accs field is missing.');
     end
 elseif exist('tdata', 'var')
-    data = tdata;
-    if size(data, 1) < size(data, 2), data = data'; end
+    day_data = tdata;
+    if size(day_data, 1) < size(day_data, 2), day_data = day_data'; end
 elseif exist('accs', 'var')
-    data = accs;
+    day_data = accs;
 else
     error('Data variable not found.');
 end
 
-%% 3. Extract Wind Data
-% Channel Mapping based on provided definitions:
-% Col 10: Wind Speed
-if size(data, 2) >= 16
-    % 16-Channel Format
-    ws = data(:, 10); % Channel 10 is Wind Speed. Direction is separate.
-    % Attempt to find direction
-    if exist('D', 'var') && isfield(D, 'wind')
-        wd = D.wind;
-    elseif exist('wind', 'var')
-        wd = wind;
-    elseif exist('wind_direction', 'var')
-        wd = wind_direction;
+if size(day_data, 2) >= 11
+    % Explicit 16-Channel Format:
+    % Col 10 is D.WIND
+    ws_day = day_data(:, 10); 
+    
+    % Col 11 is D.LAT (not wind direction). The detailed data does not contain wind direction.
+    % Extract actual Wind Direction from the summary data and interpolate it to the 1Hz day data.
+    n_samples = length(ws_day);
+    if exist('D', 'var') && isfield(D, 'accs_timestamp')
+        t_day = D.accs_timestamp;
+    elseif exist('time', 'var') && isnumeric(time) && length(time) == n_samples
+        t_day = time;
     else
-        fprintf('Wind Direction not found in detailed file. Fetching from summary...\n');
-        % Fallback: Load Summary Data for Direction
-        sum_filename = 'h_summaries20160405_simple.mat';
-        if exist(sum_filename, 'file')
-            S = load(sum_filename);
-        elseif exist(fullfile('CW1-data', sum_filename), 'file')
-            S = load(fullfile('CW1-data', sum_filename));
-        elseif exist(fullfile('..', 'CW1-data', sum_filename), 'file')
-            S = load(fullfile('..', 'CW1-data', sum_filename));
-        else
-            error('Wind Direction not found and summary file missing.');
-        end
-        
-        % Extract Summary Direction
-        idx_wd_sum = find(strcmp(S.lab, 'HBB_WIH000CDD'), 1);
-        if isempty(idx_wd_sum), error('Direction channel not found in summary.'); end
-        
-        t_sum = S.t;
-        wd_sum = S.data(:, idx_wd_sum);
-        
-        % Determine Detailed Time Vector
-        t_detailed = [];
-        if exist('D', 'var') && isfield(D, 'accs_timestamp')
-            t_detailed = D.accs_timestamp;
-        elseif exist('time', 'var')
-            try
-                if iscell(time) || ischar(time), t_detailed = datenum(time); else, t_detailed = double(time); end
-            catch
-                t_detailed = [];
-            end
-        end
-        
-        % Fallback if time vector is missing, invalid length, or all NaNs
-        if isempty(t_detailed) || length(t_detailed) ~= length(ws) || all(isnan(t_detailed))
-            t_detailed = datenum(2012, 11, 25) + (0:length(ws)-1)' / 86400; % Default 1Hz assumption
-        end
-        
-        % Ensure t_detailed is a column vector
-        if size(t_detailed, 1) < size(t_detailed, 2), t_detailed = t_detailed'; end
-
-        % Interpolate Direction to Detailed Time (Nearest Neighbor handles 0/360 wrap)
-        valid_s = ~isnan(wd_sum) & ~isnan(t_sum);
-        wd = interp1(t_sum(valid_s), wd_sum(valid_s), t_detailed, 'nearest', 'extrap');
+        t_day = datenum(2012, 11, 25) + (0:n_samples-1)' / 86400;
     end
     
-    if size(wd, 1) < size(wd, 2), wd = wd'; end
-    % Ensure lengths match
-    if length(wd) ~= length(ws)
-        min_len = min(length(wd), length(ws));
-        wd = wd(1:min_len);
-        ws = ws(1:min_len);
-    end
-elseif size(data, 2) >= 4
+    [t_sum_uniq, uniq_idx] = unique(t_sum_valid);
+    wd_sum_uniq = wd_sum(uniq_idx);
+    wd_day = interp1(t_sum_uniq, wd_sum_uniq, t_day, 'nearest', 'extrap');
+elseif size(day_data, 2) >= 5
     % 5-Channel Format
-    ws = data(:, 4);
-    if size(data, 2) >= 5
-        wd = data(:, 5);
-    else
-        error('Wind Direction column not found.');
-    end
+    ws_day = day_data(:, 4);
+    wd_day = day_data(:, 5);
 else
-    error('Data format unrecognized.');
+    error('Data format unrecognized. Cannot extract wind speed and direction.');
 end
 
 % Remove NaNs
-valid_idx = ~isnan(ws) & ~isnan(wd);
-ws = ws(valid_idx);
-wd = wd(valid_idx);
+valid_idx_day = ~isnan(ws_day) & ~isnan(wd_day);
+ws_day = ws_day(valid_idx_day);
+wd_day = wd_day(valid_idx_day);
 
-if isempty(ws)
+if isempty(ws_day)
     error('No valid wind data found. Check if Summary file covers the date of the Detailed file.');
 end
 
@@ -126,44 +110,58 @@ target_unit = 'mps'; % Options: 'mps', 'knots', 'mph'
 
 switch lower(target_unit)
     case 'knots'
-        ws = ws * 1.94384; % 1 m/s = 1.94 knots
+        ws_day = ws_day * 1.94384; % 1 m/s = 1.94 knots
+        ws_sum = ws_sum * 1.94384;
         unit_label = 'Knots';
     case 'mph'
-        ws = ws * 2.23694; % 1 m/s = 2.24 mph
-        unit_label = 'Miles per Hour (mph)';
+        ws_day = ws_day * 2.23694; % 1 m/s = 2.24 mph
+        ws_sum = ws_sum * 2.23694;
+        unit_label = 'mph';
     otherwise
         unit_label = 'm/s';
 end
 
-WindDir = wd; % Wind Direction in degrees
-
-[max_ws, max_idx] = max(ws);
-fprintf('Max Wind Speed on 25/11/12: %.2f %s (Direction: %.0f deg)\n', max_ws, unit_label, WindDir(max_idx));
+[max_ws_day, max_idx_day] = max(ws_day);
+fprintf('Max Wind Speed on 25/11/12: %.2f %s (Direction: %.0f deg)\n', max_ws_day, unit_label, wd_day(max_idx_day));
 
 %% 5. Generate Plots
-% Plot 1: Polar Scatter (Speed vs Direction)
-% Visualizes the frequency and intensity of wind speed by direction
-figure('Name', 'Wind Speed vs Direction', 'Color', 'w', 'Position', [100, 100, 600, 600]);
-polarscatter(deg2rad(WindDir), ws, 25, ws, 'filled');
-ax = gca;
-ax.ThetaZeroLocation = 'top';
-ax.ThetaDir = 'clockwise';
-colormap(parula); % Professional colormap
-c = colorbar;
-c.Label.String = ['Wind Speed (' unit_label ')'];
-title('Wind Speed vs Direction (Scatter)');
-rlim([0 max(ws)*1.1]);
-ax.ThetaTick = 0:45:315;
-ax.ThetaTickLabel = {'N','NE','E','SE','S','SW','W','NW'};
+figure('Name', 'Wind Rose Analysis', 'Color', 'w', 'Position', [100, 100, 1200, 500]);
 
+% --- Plot 1: Long-Term Summary ---
+subplot(1, 2, 1);
+if exist('windrose', 'file') == 2
+    % Use built-in windrose (R2023b+)
+    windrose(wd_sum, ws_sum);
+    title('Long-Term Summary Wind Rose');
+else
+    % Fallback to polar scatter if windrose is not available
+    polarscatter(deg2rad(wd_sum), ws_sum, 10, ws_sum, 'filled', 'MarkerFaceAlpha', 0.1);
+    ax1 = gca;
+    ax1.ThetaZeroLocation = 'top'; % North at the top
+    ax1.ThetaDir = 'clockwise';    % NESW direction
+    colormap(ax1, parula);
+    c1 = colorbar;
+    c1.Label.String = ['Wind Speed (' unit_label ')'];
+    title('Long-Term Summary (Polar Scatter)');
+    ax1.ThetaTick = 0:45:315;
+    ax1.ThetaTickLabel = {'N','NE','E','SE','S','SW','W','NW'};
+end
 
-% Plot 2: Directional Histogram
-% Shows the frequency of wind coming from each direction sector
-figure('Name', 'Wind Direction Frequency', 'Color', 'w', 'Position', [150, 150, 600, 600]);
-polarhistogram(deg2rad(WindDir), 16, 'FaceColor', [0 0.4470 0.7410], 'FaceAlpha', 0.6);
-ax = gca;
-ax.ThetaZeroLocation = 'top';
-ax.ThetaDir = 'clockwise';
-title('Wind Direction Frequency');
-ax.ThetaTick = 0:45:315;
-ax.ThetaTickLabel = {'N','NE','E','SE','S','SW','W','NW'};
+% --- Plot 2: Detailed Event Day ---
+subplot(1, 2, 2);
+if exist('windrose', 'file') == 2
+    windrose(wd_day, ws_day);
+    title('Wind Rose for Nov 25, 2012');
+else
+    polarscatter(deg2rad(wd_day), ws_day, 10, ws_day, 'filled', 'MarkerFaceAlpha', 0.05);
+    ax2 = gca;
+    ax2.ThetaZeroLocation = 'top'; 
+    ax2.ThetaDir = 'clockwise';    
+    colormap(ax2, parula);
+    c2 = colorbar;
+    c2.Label.String = ['Wind Speed (' unit_label ')'];
+    title('Nov 25, 2012 (Polar Scatter)');
+    rlim([0 max(ws_day)*1.1]);
+    ax2.ThetaTick = 0:45:315;
+    ax2.ThetaTickLabel = {'N','NE','E','SE','S','SW','W','NW'};
+end

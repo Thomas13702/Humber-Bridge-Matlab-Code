@@ -65,7 +65,7 @@ else
 end
 title('Bivariate Histogram: Thermal Expansion Operating Regime');
 xlabel('Temperature (C)');
-ylabel('Expansion Joint Displacement (m)');
+ylabel('Expansion Joint Displacement (mm)');
 grid on;
 
 %% 5. Plot 3: 1D Loading Histograms (Overlaid)

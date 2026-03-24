@@ -101,13 +101,13 @@ elseif exist('tdata', 'var') && exist('time', 'var')
     end
 
     % Check for 16-channel format based on user definition
-    % Standard format: Cols 1-3 (Sensor 1), Cols 4-6 (Sensor 2), Col 10 (Wind), Col 11 (Lat Acc)
     if size(data_accs, 2) >= 16
-        fprintf('Using 16-channel tdata definition.\n');
-        % Channel 1: (E+W)/2 east mm
-        % Channel 4: (E+W)/2 north mm (Axial/Lateral)
-        % Channel 10: WIND
-        % Channel 11: LAT acc
+        fprintf('Using explicit 16-channel definition.\n');
+        % Col 1: (E+W)/2 east mm
+        % Col 4: (E+W)/2 north mm
+        % Col 7: D.VERT
+        % Col 10: D.WIND
+        % Col 11: D.LAT
         
         % Use the generated time vector for GPS plots
         t_gps = t_accs;
@@ -119,10 +119,32 @@ elseif exist('tdata', 'var') && exist('time', 'var')
         % Map Wind, Vert, and Lat Accel
         wind_speed = data_accs(:, 10);
         acc_lat    = data_accs(:, 11) / 1000;    % Convert mm/s^2 to m/s^2
-        acc_vert   = data_accs(:, 16) / 9806.65; % Convert mm/s^2 to g
+        acc_vert   = data_accs(:, 7) / 9806.65;  % D.VERT (mm/s^2 to g)
         
-        % Mark Wind Dir as missing for this format
-        wind_dir = []; 
+        % Wind direction is not in the detailed 16-channel data.
+        % Load the summary data to extract and interpolate the actual wind direction.
+        wind_dir = nan(n_samples, 1);
+        file_sum = 'h_summaries20160405_simple.mat';
+        sum_path = '';
+        if exist(file_sum, 'file'), sum_path = file_sum;
+        elseif exist(fullfile('CW1-data', file_sum), 'file'), sum_path = fullfile('CW1-data', file_sum);
+        elseif exist(fullfile('..', 'CW1-data', file_sum), 'file'), sum_path = fullfile('..', 'CW1-data', file_sum);
+        end
+        
+        if ~isempty(sum_path)
+            S = load(sum_path);
+            idx_wd = find(strcmp(S.lab, 'HBB_WIH000CDD'), 1);
+            if ~isempty(idx_wd)
+                S.data(S.data == -999) = NaN;
+                wd_raw = S.data(:, idx_wd);
+                valid_wd = ~isnan(wd_raw);
+                [t_sum_uniq, uniq_idx] = unique(S.t(valid_wd));
+                wd_uniq = wd_raw(valid_wd);
+                wind_dir = interp1(t_sum_uniq, wd_uniq(uniq_idx), t_accs, 'nearest', 'extrap');
+            end
+        else
+            warning('Summary file not found. Wind direction will be empty.');
+        end
         
     else
         % Fallback for unknown tdata structure
@@ -158,31 +180,34 @@ if ~isempty(gps_mean_north), fprintf('GPS North:  Range [%.4f, %.4f] m\n', min(g
 fprintf('------------------------\n');
 
 %% 3. Generate Plots
-figure('Name', 'Event Check: Nov 25 2012 - Detailed (humberdefs)', 'NumberTitle', 'off', 'Color', 'w');
+figure('Name', 'Event Check: Nov 25 2012 - Detailed (humberdefs)', 'NumberTitle', 'off', 'Color', 'w', 'Position', [100, 50, 800, 900]);
 
 % Subplot 1: Wind Speed
-subplot(4, 1, 1);
+subplot(5, 1, 1);
 plot(t_accs, wind_speed, 'b');
 ylabel('Speed (m/s)'); title('Wind Speed'); grid on;
 datetick('x', 'HH:MM', 'keeplimits');
 axis tight;
 
-% Subplot 2: Vertical Acceleration (or Wind Direction if available)
-subplot(4, 1, 2);
-if ~isempty(acc_vert)
-    plot(t_accs, acc_vert, 'r');
-    ylabel('Accel (g)'); title('Vertical Acceleration (Ch 16)');
-else
-    plot(t_accs, wind_dir, 'r.', 'MarkerSize', 2);
-    ylabel('Deg'); title('Wind Direction'); 
-    ylim([0 360]); yticks(0:90:360);
-end
+% Subplot 2: Wind Direction
+subplot(5, 1, 2);
+plot(t_accs, wind_dir, 'r.', 'MarkerSize', 1);
+ylabel('Deg'); title('Wind Direction (Actual Summary Data)'); 
+ylim([0 360]); yticks(0:90:360);
 grid on;
 datetick('x', 'HH:MM', 'keeplimits');
 axis tight;
 
-% Subplot 3: Lateral Displacement (GPS North)
-subplot(4, 1, 3); hold on;
+% Subplot 3: Vertical Acceleration
+subplot(5, 1, 3);
+plot(t_accs, acc_vert, 'color', [0.8500 0.3250 0.0980]);
+ylabel('Accel (g)'); title('Vertical Acceleration (Col 7)');
+grid on;
+datetick('x', 'HH:MM', 'keeplimits');
+axis tight;
+
+% Subplot 4: Lateral Displacement (GPS North)
+subplot(5, 1, 4); hold on;
 if ~isempty(t_gps)
     if strcmp(data_source, 'tdata') && size(data_accs, 2) >= 16
         % Plot Mean East and Mean North for 16-channel data
@@ -200,10 +225,10 @@ ylabel('Disp (m)'); title('Lateral Displacement (GPS North)'); grid on;
 datetick('x', 'HH:MM', 'keeplimits');
 axis tight;
 
-% Subplot 4: Lateral Acceleration
-subplot(4, 1, 4);
+% Subplot 5: Lateral Acceleration
+subplot(5, 1, 5);
 plot(t_accs, acc_lat, 'g');
-ylabel('Accel (m/s^2)'); title('Lateral Acceleration (H)'); grid on;
+ylabel('Accel (m/s^2)'); title('Lateral Acceleration (Col 11)'); grid on;
 datetick('x', 'HH:MM', 'keeplimits');
 axis tight;
 

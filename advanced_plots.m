@@ -109,22 +109,18 @@ axis tight;
 
 figure('Name', 'Dynamic Response Isolation', 'Color', 'w', 'Position', [150, 150, 800, 600]);
 
-% 3a. Extract GPS Height (Assume Col 3 based on [E, N, H] pattern)
-if size(event_data, 2) >= 3
-    gps_h_raw = event_data(:, 3); % East Deck Height (mm)
+% 3a. Extract GPS Height
+if size(event_data, 2) >= 5
+    gps_h_raw = event_data(:, 2); % Col 2: (E+W)/2 height mm
+    gps_h_lpf = event_data(:, 5); % Col 5: (E+W)/2 height, LPF 0.1Hz, mm
 else
     error('Insufficient columns for GPS Height.');
 end
 
 % 3b. High-Pass Filter
-% Remove quasi-static (< 0.05 Hz) using moving mean subtraction
+% Remove quasi-static (< 0.1 Hz) using the provided LPF data
 % This isolates the dynamic response (vibrations) from the static deflection
-fs = 1; % Hz
-fc = 0.05; % Cutoff frequency (Hz)
-window_size = round(fs / fc);
-
-% Calculate dynamic component (Raw - Moving Mean)
-gps_h_dynamic = gps_h_raw - movmean(gps_h_raw, window_size);
+gps_h_dynamic = gps_h_raw - gps_h_lpf;
 
 % 3c. Plot
 subplot(2, 1, 1);
@@ -136,7 +132,7 @@ grid on; axis tight;
 
 subplot(2, 1, 2);
 plot(event_t, gps_h_dynamic, 'b');
-title(sprintf('Isolated Dynamic Response (HPF > %.2f Hz)', fc));
+title('Isolated Dynamic Response (HPF > 0.1 Hz)');
 ylabel('Disp (mm)');
 xlabel('Time (UTC)');
 datetick('x', 'HH:MM', 'keeplimits');
@@ -149,13 +145,9 @@ grid on; axis tight;
 
 figure('Name', 'Deck Torsion', 'Color', 'w', 'Position', [200, 200, 800, 600]);
 
-% 4a. Extract Heights (Assuming Sensor 1=Cols 1-3, Sensor 2=Cols 4-6)
-if size(event_data, 2) >= 6
-    h_east = event_data(:, 3);
-    h_west = event_data(:, 6);
-    
-    % 4b. Calculate Torsion
-    torsion_diff = h_east - h_west;
+% 4a. Extract Torsion (Col 3: W-E diff mm)
+if size(event_data, 2) >= 3
+    torsion_diff = event_data(:, 3);
     
     % 4c. Plot
     plot(event_t, torsion_diff, 'm', 'LineWidth', 1);

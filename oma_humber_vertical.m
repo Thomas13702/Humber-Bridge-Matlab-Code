@@ -35,8 +35,8 @@ if size(data, 2) < 16
     error('Data matrix has fewer than 16 columns. Cannot extract VERT1/VERT2.');
 end
 
-vert1 = data(:, 15); % Sensor 1 (D.VERT1)
-vert2 = data(:, 16); % Sensor 2 (D.VERT2)
+vert1 = data(:, 15); % Col 15: D.VERT1
+vert2 = data(:, 16); % Col 16: D.VERT2
 
 % Convert units from mm/s^2 to g if necessary
 if mean(abs(vert1), 'omitnan') > 100

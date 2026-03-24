@@ -35,29 +35,25 @@ else
 end
 
 %% 3. Extract Specific Channels
-% Correct Mapping based on standard Humber dataset (Cols 1-3 Sensor 1, 4-6 Sensor 2)
-% Col 3: GPS Height East
-% Col 6: GPS Height West
-% Col 10: Wind Speed
-% Col 11: Lateral Acceleration
+% Explicit Mapping based on dataset definition:
+% Col 2: (E+W)/2 height mm
+% Col 3: (W-E) diff (west height - east height) mm
+% Col 5: (E+W)/2 height, LPF 0.1Hz, mm
+% Col 10: D.WIND
+% Col 11: D.LAT
 
 if size(data, 2) < 11
     error('Data matrix has fewer than 11 columns. Cannot extract required channels.');
 end
 
 % Extract Heights and Calculate Torsion
-h_east = data(:, 3);
-h_west = data(:, 6);
-deck_rotation = h_east - h_west; % Differential height represents twist (torsion)
+deck_rotation = data(:, 3); % (W-E) diff mm represents twist (torsion)
 
-% GPS Height for Filtering Plot (Use East Height)
-gps_height_raw = h_east;
+% GPS Height for Filtering Plot
+gps_height_raw = data(:, 2); % Mean height mm
 
-% Calculate LPF (Quasi-Static) Component
-% Window size for ~0.05Hz cutoff at 1Hz sampling -> ~20 samples
-% Moving average acts as a Low Pass Filter to remove high-freq vibrations
-window_size = 20; 
-gps_height_lpf = movmean(gps_height_raw, window_size);
+% LPF (Quasi-Static) Component is already provided in the data
+gps_height_lpf = data(:, 5); % Mean height, LPF 0.1Hz, mm
 
 wind_speed     = data(:, 10);
 lat_accel      = data(:, 11) / 1000; % Convert mm/s^2 to m/s^2
