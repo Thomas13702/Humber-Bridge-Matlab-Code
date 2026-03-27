@@ -125,43 +125,30 @@ end
 fprintf('Max Wind Speed on 25/11/12: %.2f %s (Direction: %.0f deg)\n', max_ws_day, unit_label, wd_day(max_idx_day));
 
 %% 5. Generate Plots
-figure('Name', 'Wind Rose Analysis', 'Color', 'w', 'Position', [100, 100, 1200, 500]);
-
 % --- Plot 1: Long-Term Summary ---
-subplot(1, 2, 1);
-if exist('windrose', 'file') == 2
-    % Use built-in windrose (R2023b+)
-    windrose(wd_sum, ws_sum);
-    title('Long-Term Summary Wind Rose');
-else
-    % Fallback to polar scatter if windrose is not available
-    polarscatter(deg2rad(wd_sum), ws_sum, 10, ws_sum, 'filled', 'MarkerFaceAlpha', 0.1);
-    ax1 = gca;
-    ax1.ThetaZeroLocation = 'top'; % North at the top
-    ax1.ThetaDir = 'clockwise';    % NESW direction
-    colormap(ax1, parula);
-    c1 = colorbar;
-    c1.Label.String = ['Wind Speed (' unit_label ')'];
-    title('Long-Term Summary (Polar Scatter)');
-    ax1.ThetaTick = 0:45:315;
-    ax1.ThetaTickLabel = {'N','NE','E','SE','S','SW','W','NW'};
-end
+figure('Name', 'Long-Term Summary Wind Rose', 'Color', 'w', 'Position', [100, 100, 600, 500]);
+% Use polar scatter to control explicit 0 at East and anticlockwise direction
+polarscatter(deg2rad(wd_sum), ws_sum, 10, ws_sum, 'filled', 'MarkerFaceAlpha', 0.1);
+ax1 = gca;
+ax1.ThetaZeroLocation = 'right'; % East at 0
+ax1.ThetaDir = 'counterclockwise'; % Anticlockwise
+colormap(ax1, parula);
+c1 = colorbar;
+c1.Label.String = ['Wind Speed (' unit_label ')'];
+title('Long-Term Summary Wind Rose');
+ax1.ThetaTick = 0:45:315;
+ax1.ThetaTickLabel = {'E','NE','N','NW','W','SW','S','SE'};
 
 % --- Plot 2: Detailed Event Day ---
-subplot(1, 2, 2);
-if exist('windrose', 'file') == 2
-    windrose(wd_day, ws_day);
-    title('Wind Rose for Nov 25, 2012');
-else
-    polarscatter(deg2rad(wd_day), ws_day, 10, ws_day, 'filled', 'MarkerFaceAlpha', 0.05);
-    ax2 = gca;
-    ax2.ThetaZeroLocation = 'top'; 
-    ax2.ThetaDir = 'clockwise';    
-    colormap(ax2, parula);
-    c2 = colorbar;
-    c2.Label.String = ['Wind Speed (' unit_label ')'];
-    title('Nov 25, 2012 (Polar Scatter)');
-    rlim([0 max(ws_day)*1.1]);
-    ax2.ThetaTick = 0:45:315;
-    ax2.ThetaTickLabel = {'N','NE','E','SE','S','SW','W','NW'};
-end
+figure('Name', 'Event Day Wind Rose (Nov 25, 2012)', 'Color', 'w', 'Position', [150, 150, 600, 500]);
+polarscatter(deg2rad(wd_day), ws_day, 10, ws_day, 'filled', 'MarkerFaceAlpha', 0.05);
+ax2 = gca;
+ax2.ThetaZeroLocation = 'right'; % East at 0
+ax2.ThetaDir = 'counterclockwise'; % Anticlockwise
+colormap(ax2, parula);
+c2 = colorbar;
+c2.Label.String = ['Wind Speed (' unit_label ')'];
+title('Wind Rose for Nov 25, 2012');
+rlim([0 max(ws_day)*1.1]);
+ax2.ThetaTick = 0:45:315;
+ax2.ThetaTickLabel = {'E','NE','N','NW','W','SW','S','SE'};
